@@ -47,3 +47,34 @@ class ResidentLinkedList:
         def is_empty(self):
             return len(self.queue) == 0
 
+# Main Program
+manager = HostelManager(capacity=2)
+
+while True:
+    print("\n1. Check In")
+    print("2. Check Out")
+    print("3. Display Residents")
+    print("4. Exit")
+
+    choice = input("Enter choice: ")
+
+    if choice == "1":
+        name = input("Name: ")
+        sid = input("Student ID: ")
+        contact = input("Contact: ")
+        manager.check_in(Resident(name, sid, contact))
+
+    elif choice == "2":
+        sid = input("Enter Student ID to check out: ")
+        manager.check_out(sid)
+
+    elif choice == "3":
+        manager.display_all()
+
+    elif choice == "4":
+        print("Exiting system.")
+        break
+
+    else:
+        print("Invalid choice.")
+
