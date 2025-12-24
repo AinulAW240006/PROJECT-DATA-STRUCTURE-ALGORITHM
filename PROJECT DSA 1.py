@@ -8,6 +8,29 @@ class Resident:
     def __str__(self):
         return f"{self.name} ({self.student_id}) - {self.contact}"
 
+    
+# Node for Singly Linked-List
+class Node:
+    def __init__(self, resident):
+        self.resident = resident
+        self.next = None
+
+# Singly Linked List for current residents
+class ResidentLinkedList:
+    def __init__(self):
+        self.head = None
+#adding residents
+    def add_resident(self, resident):
+        new_node = Node(resident)
+        new_node.next = self.head
+        self.head = new_node
+#removing residents
+    def remove_resident(self, student_id):
+        current = self.head
+        previous = None
+
+    
+
     # Queue for waiting list
     class WaitingQueue:
         def __init__(self):
@@ -23,3 +46,4 @@ class Resident:
 
         def is_empty(self):
             return len(self.queue) == 0
+
