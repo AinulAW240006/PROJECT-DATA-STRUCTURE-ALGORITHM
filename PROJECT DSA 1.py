@@ -29,7 +29,26 @@ class ResidentLinkedList:
         current = self.head
         previous = None
 
-    
+           while current:
+            if current.resident.student_id == student_id:
+                if previous is None:
+                    self.head = current.next
+                else:
+                    previous.next = current.next
+                return current.resident
+            previous = current
+            current = current.next
+        return None
+
+    def display_residents(self):
+        current = self.head
+        if not current:
+            print("No residents in hostel.")
+            return
+        while current:
+            print(current.resident)
+            current = current.next
+
 
     # Queue for waiting list
     class WaitingQueue:
@@ -77,4 +96,5 @@ while True:
 
     else:
         print("Invalid choice.")
+
 
