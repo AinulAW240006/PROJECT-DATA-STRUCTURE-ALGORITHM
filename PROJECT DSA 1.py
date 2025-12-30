@@ -1,4 +1,11 @@
-#Resident class
+
+import tkinter as tk
+from tkinter import ttk, messagebox
+from PIL import Image, ImageTk
+
+
+# ===================== DATA MODEL =====================
+
 class Resident:
     def __init__(self, name, student_id, contact):
         self.name = name
@@ -8,7 +15,20 @@ class Resident:
     def __str__(self):
         return f"{self.name} ({self.student_id}) - {self.contact}"
 
-    
+
+class Node:
+    def __init__(self, resident):
+        self.resident = resident
+        self.next = None
+
+    def to_list(self):
+        result = []
+        cur = self.head
+        while cur:
+            result.append(cur.resident)
+            cur = cur.next
+        return result
+
 # Node for Singly Linked-List
 class Node:
     def __init__(self, resident):
@@ -49,52 +69,202 @@ class ResidentLinkedList:
             print(current.resident)
             current = current.next
 
+class WaitingQueue:
+    def __init__(self):
+        self.queue = []
 
-    # Queue for waiting list
-    class WaitingQueue:
-        def __init__(self):
-            self.queue = []
+    def enqueue(self, resident):
+        self.queue.append(resident)
 
-        def enqueue(self, resident):
-            self.queue.append(resident)
+    def dequeue(self):
+        return self.queue.pop(0) if self.queue else None
 
-        def dequeue(self):
-            if self.queue:
-                return self.queue.pop(0)
-            return None
+    def to_list(self):
+        return list(self.queue)
 
-        def is_empty(self):
-            return len(self.queue) == 0
 
-# Main Program
-manager = HostelManager(capacity=2)
+class HostelManager:
+    def __init__(self, capacity):
+        self.capacity = capacity
+        self.current_count = 0
+        self.residents = ResidentLinkedList()
+        self.waiting = WaitingQueue()
 
-while True:
-    print("\n1. Check In")
-    print("2. Check Out")
-    print("3. Display Residents")
-    print("4. Exit")
+    def check_in(self, resident):
+        if self.current_count < self.capacity:
+            self.residents.add_resident(resident)
+            self.current_count += 1
+            return "checked_in"
+        else:
+            self.waiting.enqueue(resident)
+            return "queued"
 
-    choice = input("Enter choice: ")
+    def check_out(self, student_id):
+        removed = self.residents.remove_resident(student_id)
+        if not removed:
+            return ("not_found", None)
 
-    if choice == "1":
-        name = input("Name: ")
-        sid = input("Student ID: ")
-        contact = input("Contact: ")
-        manager.check_in(Resident(name, sid, contact))
+        self.current_count -= 1
+        moved_in = None
 
-    elif choice == "2":
-        sid = input("Enter Student ID to check out: ")
-        manager.check_out(sid)
+        if self.waiting.to_list():
+            moved_in = self.waiting.dequeue()
+            self.residents.add_resident(moved_in)
+            self.current_count += 1
 
-    elif choice == "3":
-        manager.display_all()
+        return ("checked_out", moved_in)
 
-    elif choice == "4":
-        print("Exiting system.")
-        break
 
-    else:
-        print("Invalid choice.")
+# ===================== MAIN APP =====================
+class HostelApp(tk.Tk):
+    def __init__(self):
+        super().__init__()
+
+        self.title("Hostel Check-in & Check-out Management System")
+
+        self.state("zoomed")          # ✅ OPTION 2: MAXIMIZED WINDOW
+        self.resizable(True, True)    # allow resizing
+
+
+        self.manager = HostelManager(capacity=3)
+
+        container = tk.Frame(self)
+        container.pack(fill="both", expand=True)
+
+        self.frames = {}
+        for F in (WelcomePage, MainMenuPage):
+            frame = F(container, self)
+            self.frames[F] = frame
+            frame.place(relwidth=1, relheight=1)
+
+        self.show_frame(WelcomePage)
+
+    def show_frame(self, page):
+        self.frames[page].tkraise()
+
+
+# ===================== PAGE 1 : WELCOME =====================
+class WelcomePage(tk.Frame):
+    def __init__(self, parent, controller):
+        super().__init__(parent)
+
+        # ===== AUTO-RESIZE BACKGROUND IMAGE =====
+        w = controller.winfo_screenwidth()
+        h = controller.winfo_screenheight()
+
+        img = Image.open("images/dsa_image.png")
+        img = img.resize((w, h))
+        self.bg_image = ImageTk.PhotoImage(img)
+
+        bg_label = tk.Label(self, image=self.bg_image)
+        bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+
+        tk.Label(
+            self,
+            text="HOSTEL MANAGEMENT ONLINE SYSTEM (HOMS)",
+            font=("Arial", 20, "bold"),
+            bg="white"
+        ).place(relx=0.5, y=80, anchor="center")
+
+        ttk.Button(
+            self,
+            text="Proceed to Hostel Management",
+            width=30,
+            command=lambda: controller.show_frame(MainMenuPage)
+        ).place(relx=0.5, y=260, anchor="center")
+
+
+# ===================== PAGE 2 : MAIN MENU =====================
+
+class MainMenuPage(tk.Frame):
+    def __init__(self, parent, controller):
+        super().__init__(parent)
+
+        ttk.Label(
+            self,
+            text="Hostel Check-In & Check-Out Management",
+            font=("Arial", 16, "bold")
+        ).pack(pady=10)
+
+        form = ttk.LabelFrame(self, text="Resident Details")
+        form.pack(padx=20, pady=10, fill="x")
+
+        self.name = tk.StringVar()
+        self.sid = tk.StringVar()
+        self.contact = tk.StringVar()
+
+        ttk.Label(form, text="Name").grid(row=0, column=0, padx=10, pady=5)
+        ttk.Entry(form, textvariable=self.name).grid(row=0, column=1)
+
+        ttk.Label(form, text="Student ID").grid(row=1, column=0, padx=10, pady=5)
+        ttk.Entry(form, textvariable=self.sid).grid(row=1, column=1)
+
+        ttk.Label(form, text="Contact").grid(row=2, column=0, padx=10, pady=5)
+        ttk.Entry(form, textvariable=self.contact).grid(row=2, column=1)
+
+        ttk.Button(form, text="Check In", command=self.check_in).grid(row=0, column=3, padx=20)
+        ttk.Button(form, text="Check Out", command=self.check_out).grid(row=1, column=3)
+
+        list_frame = ttk.Frame(self)
+        list_frame.pack(fill="both", expand=True, padx=20, pady=10)
+
+        self.resident_list = tk.Listbox(list_frame, width=45)
+        self.resident_list.pack(side="left", padx=10)
+
+        self.waiting_list = tk.Listbox(list_frame, width=45)
+        self.waiting_list.pack(side="right", padx=10)
+
+        ttk.Button(
+            self,
+            text="Back to Welcome Page",
+            command=lambda: controller.show_frame(WelcomePage)
+        ).pack(pady=10)
+
+        self.controller = controller
+        self.refresh()
+
+    def refresh(self):
+        self.resident_list.delete(0, tk.END)
+        for r in self.controller.manager.residents.to_list():
+            self.resident_list.insert(tk.END, str(r))
+
+        self.waiting_list.delete(0, tk.END)
+        for r in self.controller.manager.waiting.to_list():
+            self.waiting_list.insert(tk.END, str(r))
+
+    def check_in(self):
+        if not self.name.get() or not self.sid.get() or not self.contact.get():
+            messagebox.showwarning("Error", "All fields required")
+            return
+
+        res = Resident(self.name.get(), self.sid.get(), self.contact.get())
+        result = self.controller.manager.check_in(res)
+
+        if result == "checked_in":
+            messagebox.showinfo("Success", "Resident checked in")
+        else:
+            messagebox.showinfo("Full", "Hostel full. Added to waiting list")
+
+        self.refresh()
+
+    def check_out(self):
+        status, moved = self.controller.manager.check_out(self.sid.get())
+
+        if status == "not_found":
+            messagebox.showerror("Error", "Resident not found")
+        else:
+            msg = "Check-out successful"
+            if moved:
+                msg += f"\n{moved} moved in from waiting list"
+            messagebox.showinfo("Done", msg)
+
+        self.refresh()
+
+
+# ===================== RUN APP =====================
+
+if __name__ == "__main__":
+    app = HostelApp()
+    app.mainloop()
 
 
