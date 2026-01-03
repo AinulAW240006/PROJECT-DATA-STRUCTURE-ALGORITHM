@@ -259,6 +259,104 @@ class MainMenuPage(tk.Frame):
             messagebox.showinfo("Done", msg)
 
         self.refresh()
+        
+   # AUTO FILL STUDENT ID WHEN CLICKED
+    def select_resident(self, event):
+        selected = event.widget.curselection()
+        if not selected:
+            return
+        value = event.widget.get(selected[0])
+        sid = value.split("(")[-1].replace(")", "").strip()
+        self.sid.set(sid)
+
+    def refresh(self, controller):
+        self.res_list.delete(0, tk.END)
+        self.wait_list.delete(0, tk.END)
+
+        for r in controller.residents.to_list():
+            self.res_list.insert(tk.END, r)
+
+        for w in controller.waiting.to_list():
+            self.wait_list.insert(tk.END, w)
+
+    def check_in(self, controller):
+        name = self.name.get()
+        sid = self.sid.get()
+
+        if not name or not sid:
+            messagebox.showwarning("Input Error", "All fields required")
+            return
+
+        if controller.residents.search(sid) or controller.waiting.search(sid):
+            messagebox.showerror("Duplicate", "Student already exists")
+            return
+
+        res = Resident(name, sid)
+
+        if controller.count < controller.capacity:
+            controller.residents.insert(res)
+            controller.count += 1
+            messagebox.showinfo("Success", "Resident checked in")
+        else:
+            controller.waiting.enqueue(res)
+            messagebox.showinfo("Hostel Full", "Added to waiting queue")
+
+        self.refresh(controller)
+
+    def check_out(self, controller):
+        sid = self.sid.get()
+        if not sid:
+            messagebox.showwarning("Error", "Select a resident first")
+            return
+
+        removed = controller.residents.delete(sid)
+        if not removed:
+            messagebox.showerror("Error", "Resident not found")
+            return
+
+        controller.count -= 1
+
+        moved = controller.waiting.dequeue()
+        if moved:
+            controller.residents.insert(moved)
+            controller.count += 1
+
+        messagebox.showinfo("Done", "Check-out successful")
+        self.sid.set("")
+        self.name.set("")
+        self.refresh(controller)
+
+    def search(self, controller):
+        sid = self.sid.get()
+
+        if not sid:
+            messagebox.showwarning("Input Error", "Enter Student ID")
+            return
+
+        #  Search in resident list (Linked List)
+        resident = controller.residents.search(sid)
+        if resident:
+            messagebox.showinfo(
+                "Search Result",
+                f"Name: {resident.name}\n"
+                f"Student ID: {resident.student_id}\n"
+                f"Status: Checked-in (Resident List)"
+            )
+            return
+
+        #  Search in waiting queue
+        queued_resident, position = controller.waiting.search_with_position(sid)
+        if queued_resident:
+            messagebox.showinfo(
+                "Search Result",
+                f"Name: {queued_resident.name}\n"
+                f"Student ID: {queued_resident.student_id}\n"
+                f"Status: Waiting Queue (Position {position})"
+            )
+            return
+
+        # Not found
+        messagebox.showerror("Not Found", "Student not found in system")
 
 
 # ===================== RUN APP =====================
@@ -266,5 +364,6 @@ class MainMenuPage(tk.Frame):
 if __name__ == "__main__":
     app = HostelApp()
     app.mainloop()
+
 
 
