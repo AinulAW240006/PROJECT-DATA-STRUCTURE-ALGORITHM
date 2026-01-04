@@ -114,6 +114,54 @@ class HostelManager:
 
         return ("checked_out", moved_in)
 
+# -------- Queue --------
+class Queue:
+    def _init_(self):
+        self.front = None
+        self.rear = None
+
+    def enqueue(self, resident):
+        node = Node(resident)
+        if not self.rear:
+            self.front = self.rear = node
+        else:
+            self.rear.next = node
+            self.rear = node
+
+    def dequeue(self):
+        if not self.front:
+            return None
+        temp = self.front
+        self.front = self.front.next
+        if not self.front:
+            self.rear = None
+        return temp.resident
+
+    def search(self, student_id):
+        current = self.front
+        while current:
+            if current.resident.student_id == student_id:
+                return True
+            current = current.next
+        return False
+
+    def to_list(self):
+        result = []
+        current = self.front
+        while current:
+            result.append(str(current.resident))
+            current = current.next
+        return result
+
+    def search_with_position(self, student_id):
+        current = self.front
+        position = 1
+        while current:
+            if current.resident.student_id == student_id:
+                return current.resident, position
+            current = current.next
+            position += 1
+        return None, -1
 
 # ===================== MAIN APP =====================
 class HostelApp(tk.Tk):
@@ -364,6 +412,7 @@ class MainMenuPage(tk.Frame):
 if __name__ == "__main__":
     app = HostelApp()
     app.mainloop()
+
 
 
 
